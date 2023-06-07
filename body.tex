@@ -1,3 +1,5 @@
+\def\DB{ObsLocTAP database}
+
 \section{Introduction}
 We are required to publish the observing schedule and choose ObsLocTap\footnote{\url{documents/ObsLocTap}} as the protocol.
 
@@ -8,7 +10,90 @@ We are required to publish the observing schedule and choose ObsLocTap\footnote{
 In \citeds{DMTN-199} the agencies insist we publish a schedule 24 hours ahead of observing.
 The lack of fidelity of such a schedule is acknowledged by the agencies.
 
-As I read this there is an immediate issue - the scheduler puts out a record and the system reacts always to the the latest record.
+
+
+\section{Design}
+
+
+There are two parts to this:
+
+
+\begin{enumerate}
+\item The forecast  which comes from the scheduler.
+\item The history of which observations were made which we will need to construct.
+\end{enumerate}
+
+\subsection{Scheduler forecast}
+The scheduler puts out an event record with a number of observations in it.
+Since we are required to give 24hours notice this record should always cover 24 hours but that is not
+yet in the requirements.
+Currently the requirement is 2 hours.
+But let us assume the record will be for 24 hours.\footnote{
 At 24 hours before we would at the start of the observing night need to have the current schedule \emph{and another for the next night}.
 Or the schedule should always be 24 hours with a big gap for day time.
+}
+This record may be produced as frequently as every observation is made with an updated schedule depending on weather etc.
+Basically when the scheduler has an update a new event is published to SAL.
 
+These events are available at the USDF in the EFD and the last may be found with this influx query:
+\begin{lstlisting}
+SELECT * FROM "efd"."autogen"."lsst.sal.Scheduler.logevent_predictedSchedule
+            where numberOfTargets > 0 ORDER BY DESC LIMIT 1
+\end{lstlisting}
+
+The current structure of this record is a bunch of columnar arrays representing a time and pointing with the
+values : {\tt mjd, ra, dec, rotSkyPos, nexp}.
+It is understood more values may follow such as field/tile and filter.
+
+\subsubsection{Handling the schedule}
+We will need to look at each schedule event record in the EFD as it arrives.
+For our purposes either polling each 30s or having an influx callback on the EFD at USDF would
+work.
+
+An initial prototype could simply publish this to a web page or JSON file.
+This may be a useful tool in any case.
+However for ObsLocTap a separate record must be created for each pointing in a database lets call this the \DB in this document.
+Putting this in a postgress database would seem feasible and allow a fairly standard TAP implementation to be deployed atop.
+Postgress is already available at USDF.
+The schema shall be  defined in the schema repository
+\footnote{ SDM Schema repo \url{https://github.com/lsst/sdm_schemas/tree/main/yml}}
+ allowing us to generate the SQL from the description in the repo.
+
+So let us assume we shall have a postgress table with at least the same fields.
+As each new event record is seen the new pointings not already in the database must be added.
+
+\subsection{History of observations}
+Next we need to record which observations were made.
+There is no ID in the scheduler forecast so there is no explicit matching of observation to forecast.
+For every observation made we shall have to do either:
+\begin{enumerate}
+\item If there is a record in the \DB for this pointing mark it as done. This implies further fields are needed to record the observation {\tt Observed:bool, timeObjs:mjd , exposure:long }. We may want to duplicate more than the time to this table but the exposure ID allows one to get any info we needed from the butler registry.
+\item It there is no record create a record with {\tt Observed=False} and all the forecast field blank.
+\end{enumerate}
+
+This table would now overlap the exposure log but it is not obvious we should combine these as they serve slightly different purposes.
+
+\subsubsection{Was the  observation made ?}\label{sec:made}
+There is probably no clear cut answer to this given that there is no ID associated with the forecast.
+If we assume users of ObsLocTap cared about co-observing then their object could be anywhere in the
+$9 deg^2$ area around the pointing.
+For a first stab lets say the observation was made if all the following are true :
+
+\begin{enumerate}
+\item The filter used matched the filter in the forecast.
+This would seem to fairly important but perhaps it is not - I am unsure of the probability of
+doing the scheduled observation with the wrong filter. It seems unlikely.
+\item The {\tt ra, dec} of the forecast falls within $4 deg$ of the observation made.
+This give a 50\% chance or so that any point an observer was interested in was actually in the FOV.
+\item The shutter close time of the observation was within 30s of the mjd of the forecast.
+We are unlikely to be exactly on time so one exposure error seems reasonable.
+\end{enumerate}
+
+This is somewhat arbitrary but at least provides a codeable starting point for discussion.
+
+\subsubsection{Finding the observations}
+The butler at the USDF is ingesting the images from the summit within a minute or so.
+The butler registry can then provide the metadata needed for  \secref{sec:made}
+Again whether this is polling or call back should be discussed.
+The prompt processing is trigger at USDF would provide the correct event for doing this for example
+since it fires on each new image.

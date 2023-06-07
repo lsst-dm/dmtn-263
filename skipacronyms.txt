@@ -10,3 +10,11 @@ http
 p
 s
 A
+SELECT
+BY
+ID
+LIMIT
+ORDER
+FROM
+SDM
+
