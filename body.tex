@@ -24,7 +24,7 @@ There are two parts to this:
 \end{enumerate}
 
 \subsection{Scheduler forecast}
-The scheduler puts out an event record with a number of observations in it\footnote{\url{https://ts-scheduler.lsst.io/developer-guide/developer-guide.html#operation-modes}}.
+The scheduler puts out an event record with a number of observations in it\footnote{\url{https://ts-scheduler.lsst.io/developer-guide/developer-guide.html\#operation-modes}}.
 Since we are required to give 24hours notice this record should always cover 24 hours but that is not
 yet in the requirements.
 Currently the requirement is 2 hours.
@@ -45,7 +45,7 @@ values : {\tt mjd, ra, dec, rotSkyPos, nexp}.
 It is understood more values may follow such as field/tile and filter.
 
 
-{\bftext It seems a separate 24 hour schedule produced each night is preferable to the scheduler team. This makes the forecast easy. There would then also be several shorter {\textt predictedSchedule} events to deal with. }
+{\bf It seems a separate 24 hour schedule produced each night is preferable to the scheduler team. This makes the forecast easy. There would then also be several shorter {\texttt predictedSchedule} events to deal with. }
 
 \subsubsection{Handling the schedule}
 We will need to look at each schedule event record in the EFD as it arrives.
@@ -68,7 +68,7 @@ If there is a 24 hour schedule some of the new pointings will replace existing o
 The match would have to be done on proximity in time.
 
 \subsection{History of observations}
-Next we need to record which observations were made to fill the {\textt ObsDataSet}.
+Next we need to record which observations were made to fill the {\texttt ObsDataSet}.
 There is no ID in the scheduler forecast so there is no explicit matching of observation to forecast.
 For every observation made we shall have to do either:
 \begin{enumerate}
