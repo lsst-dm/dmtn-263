@@ -1,7 +1,7 @@
 \def\DB{ObsLocTAP database }
 
 \section{Introduction}
-We are required to publish the observing schedule and choose ObsLocTap\footnote{\url{documents/ObsLocTap}} as the protocol.
+We are required to publish the observing schedule and choose ObsLocTap\footnote{\url{https://www.ivoa.net/documents/ObsLocTAP/}} as the protocol.
 
 \section{Requirements}
 
@@ -24,13 +24,12 @@ There are two parts to this:
 \end{enumerate}
 
 \subsection{Scheduler forecast}
-The scheduler puts out an event record with a number of observations in it.
+The scheduler puts out an event record with a number of observations in it\footnote{\url{https://ts-scheduler.lsst.io/developer-guide/developer-guide.html#operation-modes}}.
 Since we are required to give 24hours notice this record should always cover 24 hours but that is not
 yet in the requirements.
 Currently the requirement is 2 hours.
 But let us assume the record will be for 24 hours.\footnote{
-At 24 hours before we would at the start of the observing night need to have the current schedule \emph{and another for the next night}.
-Or the schedule should always be 24 hours with a big gap for day time.
+At 24 hours before we would, at the start of the observing night, need to produce the schedule  \emph{for the next night}.
 }
 This record may be produced as frequently as every observation is made with an updated schedule depending on weather etc.
 Basically when the scheduler has an update a new event is published to SAL.
@@ -45,6 +44,9 @@ The current structure of this record is a bunch of columnar arrays representing 
 values : {\tt mjd, ra, dec, rotSkyPos, nexp}.
 It is understood more values may follow such as field/tile and filter.
 
+
+{\bftext It seems a separate 24 hour schedule produced each night is preferable to the scheduler team. This makes the forecast easy. There would then also be several shorter {\textt predictedSchedule} events to deal with. }
+
 \subsubsection{Handling the schedule}
 We will need to look at each schedule event record in the EFD as it arrives.
 For our purposes either polling each 30s or having an influx callback on the EFD at USDF would
@@ -56,14 +58,17 @@ However for ObsLocTap a separate record must be created for each pointing in a d
 Putting this in a postgress database would seem feasible and allow a fairly standard TAP implementation to be deployed atop.
 Postgress is already available at USDF.
 The schema shall be  defined in the schema repository
+IVOA ObsLocTap considers a table called {\texttt obsplan} and the schema is fixed in the spec.
 \footnote{ SDM Schema repo \url{https://github.com/lsst/sdm_schemas/tree/main/yml}}
  allowing us to generate the SQL from the description in the repo.
 
-So let us assume we shall have a postgress table with at least the same fields.
+So let us assume we shall have a postgress table with the IVOA fields.
 As each new event record is seen the new pointings not already in the database must be added.
+If there is a 24 hour schedule some of the new pointings will replace existing ones, the existing entries should be marked {\texttt unscheduled}.
+The match would have to be done on proximity in time.
 
 \subsection{History of observations}
-Next we need to record which observations were made.
+Next we need to record which observations were made to fill the {\textt ObsDataSet}.
 There is no ID in the scheduler forecast so there is no explicit matching of observation to forecast.
 For every observation made we shall have to do either:
 \begin{enumerate}
@@ -72,6 +77,7 @@ For every observation made we shall have to do either:
 \end{enumerate}
 
 This table would now overlap the exposure log but it is not obvious we should combine these as they serve slightly different purposes.
+It is further noted by the scheduler team that very few of the scheduled observations would be made as planned. The
 
 \subsubsection{Was the  observation made ?}\label{sec:made}
 There is probably no clear cut answer to this given that there is no ID associated with the forecast.
