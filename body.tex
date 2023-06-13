@@ -54,18 +54,21 @@ work.
 
 An initial prototype could simply publish this to a web page or JSON file.
 This may be a useful tool in any case.
-However for ObsLocTap a separate record must be created for each pointing in a database lets call this the \DB in this document.
+
+
+For ObsLocTap a separate record must be created for each pointing in a database lets call this the \DB in this document.
+ObsLocTap refers to such an entry as a {\textt Characterization}.
 Putting this in a postgress database would seem feasible and allow a fairly standard TAP implementation to be deployed atop.
 Postgress is already available at USDF.
-The schema shall be  defined in the schema repository
 IVOA ObsLocTap considers a table called {\texttt obsplan} and the schema is fixed in the spec.
+The schema shall be  defined in the schema repository
 \footnote{ SDM Schema repo \url{https://github.com/lsst/sdm_schemas/tree/main/yml}}
  allowing us to generate the SQL from the description in the repo.
 
 So let us assume we shall have a postgress table with the IVOA fields.
 As each new event record is seen the new pointings not already in the database must be added.
 If there is a 24 hour schedule some of the new pointings will replace existing ones, the existing entries should be marked {\texttt unscheduled}.
-The match would have to be done on proximity in time.
+The simple approach we would follow  for new {\texttt predictedSchedule} events is to {\texttt unschedule} any existing {\textt Characterization} in the time span of the new event.
 
 \subsection{History of observations}
 Next we need to record which observations were made to fill the {\texttt ObsDataSet}.
