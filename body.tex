@@ -23,7 +23,7 @@ There are two parts to this:
 \item The history of which observations were made which we will need to construct.
 \end{enumerate}
 
-\subsection{Scheduler forecast}
+\subsection{Scheduler forecast} \label{sec:forecast}
 The scheduler puts out an event record with a number of observations in it\footnote{\url{https://ts-scheduler.lsst.io/developer-guide/developer-guide.html\#operation-modes}}.
 Since we are required to give 24hours notice this record should always cover 24 hours but that is not
 yet in the requirements.
@@ -41,7 +41,7 @@ SELECT * FROM "efd"."autogen"."lsst.sal.Scheduler.logevent_predictedSchedule
 \end{lstlisting}
 
 The current structure of this record is a bunch of columnar arrays representing a time and pointing with the
-values : {\tt mjd, ra, dec, rotSkyPos, nexp}.
+values : {\texttt mjd, ra, dec, rotSkyPos, nexp}.
 It is understood more values may follow such as field/tile and filter.
 
 
@@ -57,7 +57,7 @@ This may be a useful tool in any case.
 
 
 For ObsLocTap a separate record must be created for each pointing in a database lets call this the \DB in this document.
-ObsLocTap refers to such an entry as a {\textt Characterization}.
+ObsLocTap refers to such an entry as a {\texttt Characterization}.
 Putting this in a postgress database would seem feasible and allow a fairly standard TAP implementation to be deployed atop.
 Postgress is already available at USDF.
 IVOA ObsLocTap considers a table called {\texttt obsplan} and the schema is fixed in the spec.
@@ -65,18 +65,25 @@ The schema shall be  defined in the schema repository
 \footnote{ SDM Schema repo \url{https://github.com/lsst/sdm_schemas/tree/main/yml}}
  allowing us to generate the SQL from the description in the repo.
 
-So let us assume we shall have a postgress table with the IVOA fields.
+Based on the required schema of ObsLocTap (reproduced in \appref{sec:obsplan} our schema and mapping to the fields shown in \secref{sec:forecast} is provided in \tabref{tab:schema}.
+
+\input{schema}
+
+
+So let us assume we shall have a postgress table with the IVOA fields as in \tabref{tab:schema}.
 As each new event record is seen the new pointings not already in the database must be added.
 If there is a 24 hour schedule some of the new pointings will replace existing ones, the existing entries should be marked {\texttt unscheduled}.
-The simple approach we would follow  for new {\texttt predictedSchedule} events is to {\texttt unschedule} any existing {\textt Characterization} in the time span of the new event.
+The simple approach we would follow  for new {\texttt predictedSchedule} events is to {\texttt unschedule} any existing {\texttt Characterization} in the time span of the new event.
 
 \subsection{History of observations}
 Next we need to record which observations were made to fill the {\texttt ObsDataSet}.
 There is no ID in the scheduler forecast so there is no explicit matching of observation to forecast.
+There is no known plan to add such an ID.
 For every observation made we shall have to do either:
 \begin{enumerate}
-\item If there is a record in the \DB for this pointing mark it as done. This implies further fields are needed to record the observation {\tt Observed:bool, timeObjs:mjd , exposure:long }. We may want to duplicate more than the time to this table but the exposure ID allows one to get any info we needed from the butler registry.
-\item It there is no record create a record with {\tt Observed=False} and all the forecast field blank.
+\item If there is a record in the \DB for this pointing mark it as done {\texttt execution\_status=Performed}.  We may want to duplicate more than the time to this table but the exposure ID allows one to get any info we needed from the butler registry.
+Initially at least we will stick with the schema in the ObsLocTap spec.
+\item It there is no record create a record with  all the forecast field blank.\footnote{It is not clear the ObsLocTap requires this.}
 \end{enumerate}
 
 This table would now overlap the exposure log but it is not obvious we should combine these as they serve slightly different purposes.
@@ -92,7 +99,7 @@ For a first stab lets say the observation was made if all the following are true
 \item The filter used matched the filter in the forecast.
 This would seem to fairly important but perhaps it is not - I am unsure of the probability of
 doing the scheduled observation with the wrong filter. It seems unlikely.
-\item The {\tt ra, dec} of the forecast falls within $4 deg$ of the observation made.
+\item The {\texttt ra, dec} of the forecast falls within $4 deg$ of the observation made.
 This give a 50\% chance or so that any point an observer was interested in was actually in the FOV.
 \item The shutter close time of the observation was within 30s of the mjd of the forecast.
 We are unlikely to be exactly on time so one exposure error seems reasonable.

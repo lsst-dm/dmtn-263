@@ -1,0 +1,87 @@
+
+\begin{table}
+\begin{tabular}{ |l|l| }
+\hline
+\textbf{Column Name} & \textbf{Mapping to Rubin} \\
+\hline
+t\_planning & logevent\_predictedSchedule.mjd \\
+\hline
+%row no:3
+target\_name & this will always be empty \\
+\hline
+%row no:4
+obs\_id & dataId['exposure'] \\
+\hline
+%row no:5
+obs\_collection &  \\
+\hline
+%row no:6
+s\_ra & ra \\
+\hline
+%row no:7
+s\_dec & dec \\
+\hline
+%row no:8
+s\_fov  & 3 \\
+\hline
+%row no:9
+s\_region & we could do this though not sure we should store it \\
+\hline
+%row no:10
+s\_resolution & 0.2 arcsec \\
+\hline
+%row no:11
+t\_min & dimensionRecord.timespan.start \\
+\hline
+%row no:12
+t\_max & dimensionRecord.timespan.end \\
+\hline
+%row no:13
+t\_exptime & t\_max - t\_min \\
+\hline
+%row no:14
+t\_resolution & 15s \\
+\hline
+%row no:15
+em\_min & Start in spectral coordinates - null?  \\
+\hline
+%row no:16
+em\_max & Stop in spectral coordinates - null? \\
+\hline
+%row no:17
+em\_res\_power & \\
+\hline
+%row no:18
+o\_ucd &  phot.flux.density? \\
+\hline
+%row no:19
+pol\_states & NULL \\
+\hline
+%row no:20
+pol\_xel & 0\\
+\hline
+%row no:21
+facility\_name & Vera C. Rubin Observatory\\
+\hline
+%row no:22
+instrument\_name &  dataId['instrument'] \\
+\hline
+%row no:23
+t\_plan\_exptime & logevent\_predictedSchedule.mjd \\
+\hline
+%row no:24
+category & Fixed \\
+\hline
+%row no:25
+priority & 1 \\
+\hline
+%row no:26
+execution\_status & One of the following values:  Scheduled, Unscheduled, Performed, Aborted \\
+\hline
+%row no:27
+tracking\_type &  Sidereal \\
+\hline
+\end{tabular}
+\caption{IVOA Obsplan columns, proposed  mapping to Rubin metadata}
+\label{tab:schema}
+\end{table}

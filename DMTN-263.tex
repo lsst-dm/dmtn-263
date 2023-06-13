@@ -8,6 +8,8 @@ basicstyle=\small\ttfamily,
 columns=flexible,
 breaklines=true
 }
+\usepackage{lscape}
+\usepackage{makecell}
 
 
 % Local commands go here.
@@ -56,6 +58,8 @@ We are required to publish the Rubin observing schedule some hours in advance.  
 \input{body}
 
 \appendix
+\section{Obsplan table from ObsLocTap} \label{sec:obsplan}
+\input{obsplan.tex}
 % Include all the relevant bib files.
 % https://lsst-texmf.lsst.io/lsstdoc.html#bibliographies
 \section{References} \label{sec:bib}

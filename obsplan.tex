@@ -1,0 +1,152 @@
+%This is copied from https://www.ivoa.net/documents/ObsLocTAP/20210724/REC-ObsLocTAP-1.0-20210724.tex
+
+The obpsplan tabel schema from the "Observation Locator Table Access Protocol
+Version 1.0" is provided here for ease of reference.
+
+\begin{landscape}
+\begin{table}
+\def\hlstrut{\vrule height 13pt depth5pt width0pt}
+\begin{tabular}{ |l|l|l| }
+\hline
+\hlstrut\textbf{Column Name} &
+\hlstrut\textbf{Description} &
+\hlstrut\textbf{Constraint} \\
+\hline
+%row no:2
+t\_planning &
+Time in MJD when this observation has been added or modified into the
+planning log &
+not null\\
+\hline
+%row no:3
+target\_name &
+Astronomical object observed, if any &
+\\
+\hline
+%row no:4
+obs\_id &
+Observation ID &
+not null\\
+\hline
+%row no:5
+obs\_collection &
+Name of the data collection &
+\\
+\hline
+%row no:6
+s\_ra &
+Central right ascension, ICRS &
+\\
+\hline
+%row no:7
+s\_dec &
+Central declination, ICRS &
+\\
+\hline
+%row no:8
+s\_fov  &
+Diameter (bounds) of the covered region &
+\\
+\hline
+%row no:9
+s\_region &
+Sky region covered by the data product (expressed in ICRS frame) &
+\\
+\hline
+%row no:10
+s\_resolution &
+Spatial resolution of data as FWHM &
+\\
+\hline
+%row no:11
+t\_min &
+Start time in MJD &
+\makecell[l]{not null for execution\_status \\ Scheduled or Performed} \\
+\hline
+%row no:12
+t\_max &
+Stop time in MJD &
+\makecell[l]{not null for execution\_status \\ Scheduled or Performed} \\
+\hline
+%row no:13
+t\_exptime &
+Total exposure time &
+\makecell[l]{not null for execution\_status \\ Scheduled or Performed} \\
+\hline
+%row no:14
+t\_resolution &
+Temporal resolution FWHM &
+\\
+\hline
+%row no:15
+em\_min &
+Start in spectral coordinates &
+\\
+\hline
+%row no:16
+em\_max &
+Stop in spectral coordinates &
+\\
+\hline
+%row no:17
+em\_res\_power &
+Spectral resolving power &
+\\
+\hline
+%row no:18
+o\_ucd &
+UCD of observable (e.g., phot.flux.density, phot.count, etc.) &
+\\
+\hline
+%row no:19
+pol\_states &
+List of polarization states or NULL if not applicable &
+\\
+\hline
+%row no:20
+pol\_xel &
+Number of polarization samples &
+\\
+\hline
+%row no:21
+facility\_name &
+Name of the facility used for this observation &
+not null\\
+\hline
+%row no:22
+instrument\_name &
+Name of the instrument used for this observation &
+\\
+\hline
+%row no:23
+t\_plan\_exptime &
+Planned or scheduled exposure time &
+\\
+\hline
+%row no:24
+category &
+Observation category. One of the following values: Fixed, Coordinated, Window,
+Other &
+not null\\
+\hline
+%row no:25
+priority &
+Priority level $ \{ $ 0, 1, 2$ \} $ &
+not null\\
+\hline
+%row no:26
+execution\_status &
+One of the following values:  Planned, Scheduled, Unscheduled, Performed, Aborted &
+not null\\
+\hline
+%row no:27
+tracking\_type &
+One of the following values:  Sidereal, Solar-system-object-tracking,
+Fixed-az-el-transit &
+not null\\
+\hline
+\end{tabular}
+\caption{ObsPlan columns description}
+\label{tab:obsplancolumns}
+\end{table}
+\end{landscape}
