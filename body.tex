@@ -1,7 +1,7 @@
 \def\DB{ObsLocTAP database }
 
 \section{Introduction}
-We are required to publish the observing schedule and, following our VO first policy, we  choose ObsLocTap\footnote{\url{https://www.ivoa.net/documents/ObsLocTAP/}} as the protocol.
+We are required to publish the observing schedule and, following our VO first policy, we  choose ObsLocTap \citep{2021ivoa.spec.0724S} \footnote{\url{https://www.ivoa.net/documents/ObsLocTAP/}} as the protocol.
 
 \section{Requirements}
 
@@ -10,17 +10,18 @@ We are required to publish the observing schedule and, following our VO first po
 In \citeds{DMTN-199} the agencies insist we publish a schedule 24 hours ahead of observing.
 The lack of fidelity of such a schedule is acknowledged by the agencies.
 
-
+Though an official LCR should be made it is clear we must provide the schedule 24 hours in advance.
 
 \section{Design}
 
 
-There are two parts to this:
+There are three parts to this:
 
 
 \begin{enumerate}
 \item The forecast  which comes from the scheduler.
 \item The history of which observations were made which we will need to construct.
+\item Publishing compliant with the IVOA ObsLocTap  spec \citep{2021ivoa.spec.0724S}.
 \end{enumerate}
 
 \subsection{Scheduler forecast} \label{sec:forecast}
@@ -40,12 +41,12 @@ SELECT * FROM "efd"."autogen"."lsst.sal.Scheduler.logevent_predictedSchedule
 \end{lstlisting}
 
 The current structure of this record is a bunch of columnar arrays representing a time and pointing with the
-values : {\texttt mjd, ra, dec, rotSkyPos, nexp}.
+values : \texttt{mjd, ra, dec, rotSkyPos, nexp}.
 It is understood more values may follow such as field/tile and filter.
-The potential mapping of these values to the ObsLocTap {\texttt Characterization} is given in \tabref{tab::schema}.
+The potential mapping of these values to the ObsLocTap \texttt{Characterization} is given in \tabref{tab:schema}.
 
 
-{\bf It seems a separate 24 hour schedule produced each night is preferable to the scheduler team. This makes the forecast easy. There would then also be several shorter {\texttt predictedSchedule} events to deal with. }
+{\bf It seems a separate 24 hour schedule produced each night is preferable to the scheduler team. This makes the forecast easy. There would then also be several shorter \texttt{predictedSchedule} events to deal with. }
 
 We are required to give 24 hours notice but that is not yet in the  baseline requirements.
 \subsubsection{Handling the schedule}
@@ -58,10 +59,10 @@ This may be a useful tool in any case.
 
 
 For ObsLocTap a separate record must be created for each pointing in a database lets call this the \DB in this document.
-ObsLocTap refers to such an entry as a {\texttt Characterization}.
+ObsLocTap refers to such an entry as a \texttt{ Characterization}.
 Putting this in a postgress database would seem feasible and allow a fairly standard TAP implementation to be deployed atop.
 Postgress is already available at USDF.
-IVOA ObsLocTap considers a table called {\texttt obsplan} and the schema is fixed in the spec (reproduced in \appref{sec:obsplan}).
+IVOA ObsLocTap considers a table called \texttt{obsplan} and the schema is fixed in the spec (reproduced in \appref{sec:obsplan}).
 The schema shall be  defined in the schema repository
 \footnote{ SDM Schema repo \url{https://github.com/lsst/sdm_schemas/tree/main/yml}}
  allowing us to generate the SQL from the description in the repo.
@@ -73,16 +74,16 @@ Based on the required schema of ObsLocTap (reproduced in \appref{sec:obsplan} ou
 
 So let us assume we shall have a postgress table with the IVOA fields as in \tabref{tab:schema}.
 As each new event record is seen the new pointings not already in the database must be added.
-If there is a 24 hour schedule some of the new pointings will replace existing ones, the existing entries should be marked {\texttt unscheduled}.
-The simple approach we would follow  for new {\texttt predictedSchedule} events is to {\texttt unschedule} any existing {\texttt Characterization} in the time span of the new event.
+If there is a 24 hour schedule some of the new pointings will replace existing ones, the existing entries should be marked \texttt{unscheduled}.
+The simple approach we would follow  for new \texttt{predictedSchedule} events is to \texttt {unschedule} any existing \texttt {Characterization} in the time span of the new event.
 
 \subsection{History of observations}
-Next we need to record which observations were made to fill the {\texttt ObsDataSet}.
+Next we need to record which observations were made to fill the \texttt{ObsDataSet}.
 There is no ID in the scheduler forecast so there is no explicit matching of observation to forecast.
 There is no known plan to add such an ID.
 For every observation made we shall have to do either:
 \begin{enumerate}
-\item If there is a record in the \DB for this pointing mark it as done {\texttt execution\_status=Performed}.  We may want to duplicate more than the time to this table but the exposure ID allows one to get any info we needed from the butler registry.
+\item If there is a record in the \DB for this pointing mark it as done\\ (set \texttt{execution\_status=Performed}).  We may want to duplicate more than the time to this table but the exposure ID allows one to get any info we needed from the butler registry.
 Initially at least we will stick with the schema in the ObsLocTap spec.
 \item It there is no record create a record with  all the forecast field blank.\footnote{It is not clear the ObsLocTap requires this.} If there is a record around this time but not this pointing/filter mark that one  \texttt{execution\_status=Unscheduled}
 \end{enumerate}
@@ -100,8 +101,8 @@ For a first stab lets say the observation was made if all the following are true
 \item The filter used matched the filter in the forecast.
 This would seem to fairly important but perhaps it is not - I am unsure of the probability of
 doing the scheduled observation with the wrong filter. It seems unlikely.
-\item The {\texttt ra, dec} of the forecast falls within $4 deg$ of the observation made.
-This give a 50\% chance or so that any point an observer was interested in was actually in the FOV.
+\item The \texttt {ra, dec} of the forecast falls within $1 deg$ of the observation made.
+This gives a >50\% chance or so that any point an observer was interested in was actually in the FOV.
 \item The shutter close time of the observation was within 30s of the mjd of the forecast.
 We are unlikely to be exactly on time so one exposure error seems reasonable.
 \end{enumerate}
@@ -112,5 +113,12 @@ This is somewhat arbitrary but at least provides a codeable starting point for d
 The butler at the USDF is ingesting the images from the summit within a minute or so.
 The butler registry can then provide the metadata needed for  \secref{sec:made}
 Again whether this is polling or call back should be discussed.
-The prompt processing is trigger at USDF would provide the correct event for doing this for example
-since it fires on each new image.
+Some assistance from  a butler guru will also be needed to work out an efficient query.
+The prompt processing is trigger at USDF would provide the correct event for doing this for example since it fires on each new image.
+
+\subsection{Publishing}
+Assuming we constructed and populate the obsplan table in the previous sections publishing means having a TAP service for that table.
+We already use CADC TAP on Qserv and there is a version for Postgress so this step may be fairly straight forward.
+
+Once the TAP service is available then it must be registered.
+This is describe in section 5 of the spec \citep{2021ivoa.spec.0724S}.
