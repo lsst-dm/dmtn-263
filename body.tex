@@ -1,7 +1,9 @@
 \def\DB{ObsLocTAP database }
 
 \section{Introduction}
-We are required to publish the observing schedule and, following our VO first policy, we  choose ObsLocTap \citep{2021ivoa.spec.0724S} \footnote{\url{https://www.ivoa.net/documents/ObsLocTAP/}} as the protocol.
+Vera C. Rubin Observatory is required to publish the observing schedule nightly. Following our VO first policy, we  choose ObsLocTap \citep{2021ivoa.spec.0724S} \footnote{\url{https://www.ivoa.net/documents/ObsLocTAP/}} as the protocol.
+
+This short document discusses some design details.
 
 \section{Requirements}
 
@@ -116,7 +118,11 @@ Again whether this is polling or call back should be discussed.
 Some assistance from  a butler guru will also be needed to work out an efficient query.
 The prompt processing is trigger at USDF would provide the correct event for doing this for example since it fires on each new image.
 
-\subsection{Publishing}
+\subsection{Deployment}
+It seems the USDF is the correct place for a small process to run which populates the \DB and exposes the obsplan table for the TAP service (\secref{sec:tap}).
+This should be deployed with Phalanx\footnote{\url{https://phalanx.lsst.io}}.
+
+\subsection{Publishing} \label{sec:tap}
 Assuming we constructed and populate the obsplan table in the previous sections publishing means having a TAP service for that table.
 We already use CADC TAP on Qserv and there is a version for Postgress so this step may be fairly straight forward.
 
