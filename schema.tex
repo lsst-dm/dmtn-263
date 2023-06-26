@@ -1,6 +1,6 @@
 
 \begin{table}
-\begin{tabular}{ |l|l| }
+\begin{tabular}{ |p{0.28\textwidth}|p{0.7\textwidth}| }
 \hline
 \textbf{Column Name} & \textbf{Mapping to Rubin} \\
 \hline
@@ -10,7 +10,7 @@ t\_planning & logevent\_predictedSchedule.mjd \\
 target\_name & this will always be empty \\
 \hline
 %row no:4
-obs\_id & dataId['exposure'] \\
+obs\_id & dataId['exposure'] or obsid from camera - initially some random number\\
 \hline
 %row no:5
 obs\_collection &  \\
@@ -43,10 +43,10 @@ t\_exptime & t\_max - t\_min \\
 t\_resolution & 15s \\
 \hline
 %row no:15
-em\_min & Start in spectral coordinates - filter based?  \\
+em\_min & Start in spectral coordinates - filter low edge in meters   \\
 \hline
 %row no:16
-em\_max & Stop in spectral coordinates - filter based? \\
+em\_max & Stop in spectral coordinates - filter high edge in meters \\
 \hline
 %row no:17
 em\_res\_power & \\
