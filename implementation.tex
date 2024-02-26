@@ -24,6 +24,36 @@ Frossie provided the simple diagram \figref{fig:obsloctap} which captures the id
 \end{figure}
 
 
+\subsection{Create the table}
+The yaml was added to {\code sdm\_schema} so Felis may be used to create the schema.
+
+I did not find Felis on pips so I grabbed \url{git@github.com:lsst/felis.git} and installed it with {\tt pip install .}.
+
+I also cloned \url{git@github.com:lsst/sdm_schemas.git}.
+
+This allowed the Felis execution, database login and table creation:i\footnote{ivoa. was removed  from th DDL} \\
+\begin{code}
+Felis create-all --engine-url="\$engine\_url" --dry-run  sdm\_schemas/yml/obsloctap.yaml > obsloctap.sql
+
+psql -h usdf-butler-session.slac.stanford.edu -U rubin lsstdb1
+
+lsstdb1=> create schema obsloctap;
+lsstdb1=> create schema obsloctap\_dev;
+
+SET SEARCH\_PATH = obsloctap\_dev;
+\\i obsplan.sql
+SET SEARCH\_PATH = obsloctap;
+\\i obsplan.sql
+
+\end{code}
+
+Can check the default schema an if  it exists with:
+\begin{code}
+show SEARCH\_PATH ;
+\\dt
+\end{code}
+
+
 \subsection{Populating the \DB}
 
 Initially at least we should try plan A and do all of this at the USDF.
@@ -41,3 +71,15 @@ There is already a ticket \jira{DM-39729} for the creation of the Felis schema.
 Another is needed to expose this via tap.
 
 Along the lines of separation of security concerns this would be deployed on the Cloud (US DAC) not in USDF.
+
+Currently the endpoint /schedule will return the last 1K lines from the Obsplan table as a json file.
+This is deployed only on usdfdev as of Dec 2023.
+\url{https://usdf-rsp-dev.slac.stanford.edu/obsloctap/schedule}
+It only contains test rows.
+
+
+\subsection{Phalanx}
+Deployment is with Phalanx  see \url{https://phalanx.lsst.io/index.html}.
+Specifically \url{https://phalanx.lsst.io/applications/obsloctap/index.html}.
+
+
