@@ -50,6 +50,7 @@ SELECT * FROM "efd"."autogen"."lsst.sal.Scheduler.logevent_predictedSchedule
 
 The current structure of this record is a bunch of columnar arrays representing a time and pointing with the
 values : \texttt{mjd, ra, dec, rotSkyPos, nexp}.
+THe full scheduler schema is at \url{https://rubin-scheduler.lsst.io/fbs-output-schema.html}.
 It is understood more values may follow such as field/tile and filter.
 The potential mapping of these values to the ObsLocTap \texttt{Characterization} is given in \tabref{tab:schema}.
 We will however pick this up from the Kafka stream directly.
