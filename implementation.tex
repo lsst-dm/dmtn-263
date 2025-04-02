@@ -31,7 +31,7 @@ I did not find Felis on pips so I grabbed \url{git@github.com:lsst/felis.git} an
 
 I also cloned \url{git@github.com:lsst/sdm_schemas.git}.
 
-This allowed the Felis execution, database login and table creation:i\footnote{ivoa. was removed  from th DDL} \\
+This allowed the Felis execution, database login and table creation:\footnote{ivoa. was removed  from th DDL} \\
 \begin{code}
 Felis create-all --engine-url="\$engine\_url" --dry-run  sdm\_schemas/yml/obsloctap.yaml > obsloctap.sql
 
@@ -59,11 +59,14 @@ show SEARCH\_PATH ;
 Initially at least we should try plan A and do all of this at the USDF.
 The EFD messages are replicated there so we can pick up the scheduler messages and process them via a stream processor in Kafka (within Sasquatch).
 
-The 24 hour schedule should probably get a new topic to make it distinct from the normal operations - this has to be agreed with scheduler/summit. This will be processed to create schedule entries.
+The 24 hour schedule may be access at USDF by a call to an API in rubin-sim 2.2.2+ \\
+{\texttt sim\_archive.fetch\_obsloctap\_visits(nights=2)}.
+This result can be processed and entries with priority 2 put itn eh obslan table.
+It should be robust against a second call so shouls always try to update or delete overlapping times.
 
-Then we will process {\texttt lsst.sal.Scheduler.logevent\_predictedSchedule } to update/create schedule entries.
+Then we will process {\texttt lsst.sal.Scheduler.logevent\_predictedSchedule }\footnote{see \url{https://usdf-rsp.slac.stanford.edu/kafdrop/topic/lsst.sal.MTHeaderService.logevent_largeFileObjectAvailable}} to update/create schedule entries.
 
-Finally we will look at {\texttt lsst.sal.ATHeaderService.logevent\_largeFileObjectAvailable} which will give us a pointer to the header ({\texttt url} field) and using {\texttt astro\_metadata\_translator}  we can get r obsid, exposure\_id, filter and update the \DB appropriately.
+Finally we will look at {\texttt lsst.sal.MTHeaderService.logevent\_largeFileObjectAvailable} which will give us a pointer to the header ({\texttt url} field) and using {\texttt astro\_metadata\_translator}  we can get r obsid, exposure\_id, filter and update the \DB appropriately.
 
 \subsection{TAP service}
 
