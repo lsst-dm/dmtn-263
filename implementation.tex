@@ -41,9 +41,10 @@ lsstdb1=> create schema obsloctap;
 lsstdb1=> create schema obsloctap\_dev;
 
 SET SEARCH\_PATH = obsloctap\_dev;
-\\i obsplan.sql
-SET SEARCH\_PATH = obsloctap;
-\\i obsplan.sql
+\textbackslash{}\textbackslash{}i obsplan.sql
+
+\textbackslash{}\textbackslash{}SET SEARCH\_PATH = obsloctap;
+\textbackslash{}\textbackslash{}i obsplan.sql
 
 \end{code}
 
@@ -68,7 +69,18 @@ It should be robust against a second call so should always try to update or dele
 Then we will process {\texttt lsst.sal.Scheduler.logevent\_predictedSchedule }\footnote{see \url{https://usdf-rsp.slac.stanford.edu/kafdrop/topic/lsst.sal.MTHeaderService.logevent_largeFileObjectAvailable}} to update/create schedule entries.
 
 \subsubsection{Observation made}
-Finally we will look at {\texttt lsst.sal.MTHeaderService.logevent\_largeFileObjectAvailable} which will give us a pointer to the header ({\texttt url} field) and using {\texttt astro\_metadata\_translator}  we can get r obsid, exposure\_id, filter and update the \DB appropriately.
+Finally we intended to  look at {\texttt lsst.sal.MTHeaderService.logevent\_largeFileObjectAvailable} which will give us a pointer to the header ({\texttt url} field) and using {\texttt astro\_metadata\_translator}  we can get r obsid, exposure\_id, filter and update the \DB appropriately.
+However all of this is already in {\texttt ConsDB} so we though a query there would be more appropriate.
+
+ConsDB schema is in {\texttt sql\_schemas}\footnote{\url{https://sdm-schemas.lsst.io/cdb_lsstcam.html}}.
+Though there is a ConsDB\_query client in rubin\_nights - the current code accesses directly using the credentials passed to the container.  The query to get the observation data looks like this:
+
+\begin{code}
+SELECT exposure\_id,obs\_start\_mjd,obs\_end\_mjd,band,physical\_filter,s\_ra,s\_dec,target\_name,science\_program,scheduler\_note from cdb\_lsstcam.exposure where obs\_start\_mjd between 60858.98263978243 and 60859.98263978243 and can\_see\_sky = True order by obs\_start\_mjd
+\end{code}
+
+The numbers and the MJD stamps between which to search.
+
 
 \subsection{TAP service}
 
@@ -80,8 +92,10 @@ Along the lines of separation of security concerns this would be deployed on the
 Currently the endpoint /schedule will return the last 1K lines from the Obsplan table as a json file.
 This is deployed only on usdfdev as of Dec 2023.
 \url{https://usdf-rsp-dev.slac.stanford.edu/obsloctap/schedule}
-It only contains test rows.
+The parameter is the number of hours look ahead required.
 
+As of July 2025 this is connected to the scheduler and provides the next 2 days schedule, it is update 12 hours.
+It returns JSON.
 
 \subsection{Phalanx}
 Deployment is with Phalanx  see \url{https://phalanx.lsst.io/index.html}.
