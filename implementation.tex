@@ -65,8 +65,17 @@ The 24 hour schedule may be access at USDF by a call to an API in rubin-sim 2.2.
 This result can be processed and entries with priority 2 put in the obsplan table.
 It should be robust against a second call so should always try to update or delete overlapping times.
 
+In theory {\texttt target\_id} should be in this data i and propagates through the observing chain
+but it is not yet provided .
+
+The code for this is in schedule24.py.
+
 \subsubsection{4 hour schedule}
-Then we will process {\texttt lsst.sal.Scheduler.logevent\_predictedSchedule }\footnote{see \url{https://usdf-rsp.slac.stanford.edu/kafdrop/topic/lsst.sal.MTHeaderService.logevent_largeFileObjectAvailable}} to update/create schedule entries.
+Then we will process {\texttt lsst.sal.Scheduler.logevent\_predictedSchedule }\footnote{see \url{https://usdf-rsp.slac.stanford.edu/kafdrop/topic/lsst.sal.Scheduler.logevent_predictedSchedule/allmessages}} to update/create schedule entries.
+
+The contents of this message are not as rich as the 24 hour schedule - but the code created Obsplan objects from them and attempts to do an update in the same manner as the 24 hour schedule.
+
+The code for this is in consumekafka.py
 
 \subsubsection{Observation made}
 Finally we intended to  look at {\texttt lsst.sal.MTHeaderService.logevent\_largeFileObjectAvailable} which will give us a pointer to the header ({\texttt url} field) and using {\texttt astro\_metadata\_translator}  we can get r obsid, exposure\_id, filter and update the \DB appropriately.
@@ -81,6 +90,14 @@ SELECT exposure\_id,obs\_start\_mjd,obs\_end\_mjd,band,physical\_filter,s\_ra,s\
 
 The numbers and the MJD stamps between which to search.
 
+The code for this is in consdbhelp.py.
+
+\subsubsection{Schedule loop}
+
+Each of the 3 DB updates run at different cadences.
+All are called from ScheduleLoop.py - which runs each in its own thread using asyncio runner.
+
+
 
 \subsection{TAP service}
 
@@ -89,13 +106,19 @@ Another is needed to expose this via tap.
 
 Along the lines of separation of security concerns this would be deployed on the Cloud (US DAC) not in USDF.
 
-Currently the endpoint /schedule will return the last 1K lines from the Obsplan table as a json file.
-This is deployed only on usdfdev as of Dec 2023.
-\url{https://usdf-rsp-dev.slac.stanford.edu/obsloctap/schedule}
-The parameter is the number of hours look ahead required.
+Currently the endpoint /schedule will return the next 24 hours from the Obsplan table as a json file.
+This is deployed only on usdfdev as of Dec 2023
+\url{https://usdf-rsp-dev.slac.stanford.edu/obsloctap/schedule?time=12}
+
+and on production since July 2025
+\url{https://usdf-rsp-dev.slac.stanford.edu/obsloctap/schedule?time=24}
+
+The time parameter is the number of hours look ahead required,  a start time may also be provided  allowing one to look at historical entries.
 
 As of July 2025 this is connected to the scheduler and provides the next 2 days schedule, it is update 12 hours.
-It returns JSON.
+
+Though not very efficient a simple rendering to HTML is provided at :
+\url{https://usdf-rsp.slac.stanford.edu/obsloctap/static/viewer.html}
 
 \subsection{Phalanx}
 Deployment is with Phalanx  see \url{https://phalanx.lsst.io/index.html}.
