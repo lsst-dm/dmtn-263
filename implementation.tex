@@ -3,7 +3,7 @@
 There are two parts to this implementation:
 
 \begin{enumerate}
-\item The postgress database and populating it.
+\item The Postgres database and populating it.
 \item Serving that up via TAP.
 \end{enumerate}
 
@@ -18,7 +18,7 @@ Frossie provided the simple diagram \figref{fig:obsloctap} which captures the id
 \begin{figure}
 \begin{centering}
 \includegraphics[width=0.8\textwidth]{obsloctap}
-	\caption{ Choices on how to populate the postgress database for ObsLocTap.
+	\caption{ Choices on how to populate the Postgres database for ObsLocTap.
 \label{fig:obsloctap}}
 \end{centering}
 \end{figure}
@@ -31,7 +31,7 @@ I did not find Felis on pips so I grabbed \url{git@github.com:lsst/felis.git} an
 
 I also cloned \url{git@github.com:lsst/sdm_schemas.git}.
 
-This allowed the Felis execution, database login and table creation:i\footnote{ivoa. was removed  from th DDL} \\
+This allowed the Felis execution, database login and table creation:\footnote{ivoa. was removed  from th DDL} \\
 \begin{code}
 Felis create-all --engine-url="\$engine\_url" --dry-run  sdm\_schemas/yml/obsloctap.yaml > obsloctap.sql
 
@@ -41,9 +41,10 @@ lsstdb1=> create schema obsloctap;
 lsstdb1=> create schema obsloctap\_dev;
 
 SET SEARCH\_PATH = obsloctap\_dev;
-\\i obsplan.sql
-SET SEARCH\_PATH = obsloctap;
-\\i obsplan.sql
+\textbackslash{}\textbackslash{}i obsplan.sql
+
+\textbackslash{}\textbackslash{}SET SEARCH\_PATH = obsloctap;
+\textbackslash{}\textbackslash{}i obsplan.sql
 
 \end{code}
 
@@ -58,12 +59,45 @@ show SEARCH\_PATH ;
 
 Initially at least we should try plan A and do all of this at the USDF.
 The EFD messages are replicated there so we can pick up the scheduler messages and process them via a stream processor in Kafka (within Sasquatch).
+\subsubsection{24 hour schedule}
+The 24 hour schedule may be access at USDF by a call to an API in rubin-sim 2.2.3+ \\
+{\texttt sim\_archive.fetch\_obsloctap\_visits(nights=2)}.
+This result can be processed and entries with priority 2 put in the obsplan table.
+It should be robust against a second call so should always try to update or delete overlapping times.
 
-The 24 hour schedule should probably get a new topic to make it distinct from the normal operations - this has to be agreed with scheduler/summit. This will be processed to create schedule entries.
+In theory {\texttt target\_id} should be in this data i and propagates through the observing chain
+but it is not yet provided .
 
-Then we will process {\texttt lsst.sal.Scheduler.logevent\_predictedSchedule } to update/create schedule entries.
+The code for this is in schedule24.py.
 
-Finally we will look at {\texttt lsst.sal.ATHeaderService.logevent\_largeFileObjectAvailable} which will give us a pointer to the header ({\texttt url} field) and using {\texttt astro\_metadata\_translator}  we can get r obsid, exposure\_id, filter and update the \DB appropriately.
+\subsubsection{4 hour schedule}
+Then we will process {\texttt lsst.sal.Scheduler.logevent\_predictedSchedule }\footnote{see \url{https://usdf-rsp.slac.stanford.edu/kafdrop/topic/lsst.sal.Scheduler.logevent_predictedSchedule/allmessages}} to update/create schedule entries.
+
+The contents of this message are not as rich as the 24 hour schedule - but the code created Obsplan objects from them and attempts to do an update in the same manner as the 24 hour schedule.
+
+The code for this is in consumekafka.py
+
+\subsubsection{Observation made}
+Finally we intended to  look at {\texttt lsst.sal.MTHeaderService.logevent\_largeFileObjectAvailable} which will give us a pointer to the header ({\texttt url} field) and using {\texttt astro\_metadata\_translator}  we can get r obsid, exposure\_id, filter and update the \DB appropriately.
+However all of this is already in {\texttt ConsDB} so we though a query there would be more appropriate.
+
+ConsDB schema is in {\texttt sql\_schemas}\footnote{\url{https://sdm-schemas.lsst.io/cdb_lsstcam.html}}.
+Though there is a ConsDB\_query client in rubin\_nights - the current code accesses directly using the credentials passed to the container.  The query to get the observation data looks like this:
+
+\begin{code}
+SELECT exposure\_id,obs\_start\_mjd,obs\_end\_mjd,band,physical\_filter,s\_ra,s\_dec,target\_name,science\_program,scheduler\_note from cdb\_lsstcam.exposure where obs\_start\_mjd between 60858.98263978243 and 60859.98263978243 and can\_see\_sky = True order by obs\_start\_mjd
+\end{code}
+
+The numbers and the MJD stamps between which to search.
+
+The code for this is in consdbhelp.py.
+
+\subsubsection{Schedule loop}
+
+Each of the 3 DB updates run at different cadences.
+All are called from ScheduleLoop.py - which runs each in its own thread using asyncio runner.
+
+
 
 \subsection{TAP service}
 
@@ -72,11 +106,19 @@ Another is needed to expose this via tap.
 
 Along the lines of separation of security concerns this would be deployed on the Cloud (US DAC) not in USDF.
 
-Currently the endpoint /schedule will return the last 1K lines from the Obsplan table as a json file.
-This is deployed only on usdfdev as of Dec 2023.
-\url{https://usdf-rsp-dev.slac.stanford.edu/obsloctap/schedule}
-It only contains test rows.
+Currently the endpoint /schedule will return the next 24 hours from the Obsplan table as a json file.
+This is deployed only on usdfdev as of Dec 2023
+\url{https://usdf-rsp-dev.slac.stanford.edu/obsloctap/schedule?time=12}
 
+and on production since July 2025
+\url{https://usdf-rsp-dev.slac.stanford.edu/obsloctap/schedule?time=24}
+
+The time parameter is the number of hours look ahead required,  a start time may also be provided  allowing one to look at historical entries.
+
+As of July 2025 this is connected to the scheduler and provides the next 2 days schedule, it is update 12 hours.
+
+Though not very efficient a simple rendering to HTML is provided at :
+\url{https://usdf-rsp.slac.stanford.edu/obsloctap/static/viewer.html}
 
 \subsection{Phalanx}
 Deployment is with Phalanx  see \url{https://phalanx.lsst.io/index.html}.

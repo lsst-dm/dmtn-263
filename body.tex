@@ -50,17 +50,24 @@ SELECT * FROM "efd"."autogen"."lsst.sal.Scheduler.logevent_predictedSchedule
 
 The current structure of this record is a bunch of columnar arrays representing a time and pointing with the
 values : \texttt{mjd, ra, dec, rotSkyPos, nexp}.
+THe full scheduler schema is at \url{https://rubin-scheduler.lsst.io/fbs-output-schema.html}.
 It is understood more values may follow such as field/tile and filter.
 The potential mapping of these values to the ObsLocTap \texttt{Characterization} is given in \tabref{tab:schema}.
+We will however pick this up from the Kafka stream directly.
 
 
 {\bf It seems a separate 24 hour schedule produced each night is preferable to the scheduler team. This makes the forecast easy. There would then also be several shorter \texttt{predictedSchedule} events to deal with. }
+The 24 hour schedule is available at USDF and could be picked up independently.
+The updates could then be handled by looking at two Kafka events namely
+\texttt{ lsst.sal.Scheduler.logevent\_predictedSchedule} which gives then next 2 hours or so of events and
+\texttt{ lsst.sal.Scheduler.logevent\_nextVisit}  which gives the next pointing (almost certain to happen).
 
 We are required to give 24 hours notice but that is not yet in the  baseline requirements.
+Any consumers of this 24 hour schedule, as stated in \citeds{DMTN-199}, must acknowledge the lower probability of the observation being carried out compared to the 2 hour updates made during the night.
+
 \subsubsection{Handling the schedule}
-We will need to look at each schedule event record in the EFD as it arrives.
-For our purposes either polling each 30s or having an influx callback on the EFD at USDF would
-work.
+We will need to look at each schedule event record in as it arrives.
+The best way to do this is to listen tot he Kafka stream which populates the EFD.
 
 An initial prototype could simply publish this to a web page or JSON file.
 This may be a useful tool in any case\footnote{A start has been made in \url{https://github.com/lsst-dm/obsloctap}}.
@@ -68,8 +75,8 @@ This may be a useful tool in any case\footnote{A start has been made in \url{htt
 
 For ObsLocTap a separate record must be created for each pointing in a database lets call this the \DB in this document.
 ObsLocTap refers to such an entry as a \texttt{ Characterization}.
-Putting this in a postgress database would seem feasible and allow a fairly standard TAP implementation to be deployed atop.
-Postgress is already available at USDF.
+Putting this in a Postgres database would seem feasible and allow a fairly standard TAP implementation to be deployed atop.
+Postgres is already available at USDF.
 IVOA ObsLocTap considers a table called \texttt{obsplan} and the schema is fixed in the spec (reproduced in \appref{sec:obsplan}).
 The schema shall be  defined in the schema repository
 \footnote{ SDM Schema repo \url{https://github.com/lsst/sdm_schemas/tree/main/yml}}
@@ -80,16 +87,29 @@ Based on the required schema of ObsLocTap (reproduced in \appref{sec:obsplan} ou
 \input{schema}
 
 
-So let us assume we shall have a postgress table with the IVOA fields as in \tabref{tab:schema}.
+So let us assume we shall have a Postgres table with the IVOA fields as in \tabref{tab:schema}.
 As each new event record is seen the new pointings not already in the database must be added.
-If there is a 24 hour schedule some of the new pointings will replace existing ones, the existing entries should be marked \texttt{unscheduled}.
+
+The 24 hour schedule can be input with priority 2 (denoting lower likelihood of observation).
+We can use \texttt{observationStartMJD} and \texttt{visitExposureTime} as \texttt{t\_min,t\_max} addign a buffer:
+\begin{equation}
+ \begin{aligned}
+	buffer &= 10 m \\
+	t_{min} &= observationStartMJD - buffer \\
+	t_{max} &= observationStartMJD + visitExposureTime + buffer\\
+ \end{aligned}
+\end{equation}
+As some of the new pointings will replace existing ones, the existing entries should be marked \texttt{unscheduled}.
 The simple approach we would follow  for new \texttt{predictedSchedule} events is to \texttt {unschedule} any existing \texttt {Characterization} in the time span of the new event.
+Observations in the \texttt{predictedSchedule} would be marked with priority 1.
+Observations in the \texttt{nextVisit} would be marked with priority 0.
+
 
 \subsection{History of observations}
 Next we need to record which observations were made to fill the \texttt{ObsDataSet}.
-There is no ID in the scheduler forecast so there is no explicit matching of observation to forecast.
-There is no known plan to add such an ID.
-For every observation made we shall have to do either:
+There is currently no ID in the scheduler forecast so there is no explicit matching of observation to forecast.
+However as of January 2025 the Scheduler will start to include \texttt{target\_id} which should propagate through the messages allow easier association of predicted and actual observations.
+Otherwise for every observation made we shall have to do either:
 \begin{enumerate}
 \item If there is a record in the \DB for this pointing mark it as done\\ (set \texttt{execution\_status=Performed}).  We may want to duplicate more than the time to this table but the exposure ID allows one to get any info we needed from the butler registry.
 Initially at least we will stick with the schema in the ObsLocTap spec.
@@ -129,7 +149,7 @@ This should be deployed with Phalanx\footnote{\url{https://phalanx.lsst.io}}.
 
 \subsection{Publishing} \label{sec:tap}
 Assuming we constructed and populate the obsplan table in the previous sections publishing means having a TAP service for that table.
-We already use CADC TAP on Qserv and there is a version for Postgress so this step may be fairly straight forward.
+We already use CADC TAP on Qserv and there is a version for Postgres so this step may be fairly straight forward.
 
 Once the TAP service is available then it must be registered.
 This is describe in section 5 of the spec \citep{2021ivoa.spec.0724S}.
