@@ -7,10 +7,10 @@
 t\_planning & logevent\_predictedSchedule.mjd \\
 \hline
 %row no:3
-target\_name & target\_name \\
+target\_name & target\_name but perhaps target\_id \\
 \hline
 %row no:4
-obs\_id & dataId['exposure'] or obsid from camera - initially some random number\\
+obs\_id & exposure\_id from ConsDB or  - initally target\_name from sim\\
 \hline
 %row no:5
 obs\_collection &  \\
@@ -37,7 +37,7 @@ t\_min & dimensionRecord.timespan.start \\
 t\_max & dimensionRecord.timespan.end \\
 \hline
 %row no:13
-t\_exptime & t\_max - t\_min \\
+t\_exptime & simulator visitExposureTime \\
 \hline
 %row no:14
 t\_resolution & 15s \\
@@ -61,13 +61,13 @@ pol\_states & NULL \\
 pol\_xel & 0\\
 \hline
 %row no:21
-facility\_name & Vera C. Rubin Observatory\\
+facility\_name & Rubin:Simonyi\\
 \hline
 %row no:22
 instrument\_name &  dataId['instrument'] \\
 \hline
 %row no:23
-t\_plan\_exptime & logevent\_predictedSchedule.mjd \\
+t\_plan\_exptime & simulator visitExposureTime \\
 \hline
 %row no:24
 category & Fixed \\
