@@ -118,7 +118,7 @@ Based on the required schema of ObsLocTap (reproduced in \appref{sec:obsplan} ou
 So let us assume we shall have a Postgres table with the IVOA fields as in \tabref{tab:schema}.
 As each new event record is seen the new pointings not already in the database must be added.
 
-The 24 hour schedule can be input with priority 2 (denoting lower likelihood of observation).
+The 24 hour schedule can be input with priority 0 (denoting lower likelihood of observation).
 We can use \texttt{observationStartMJD} and \texttt{visitExposureTime} as \texttt{t\_min,t\_max} addign a buffer:
 \begin{equation}
  \begin{aligned}
@@ -130,7 +130,7 @@ We can use \texttt{observationStartMJD} and \texttt{visitExposureTime} as \textt
 As some of the new pointings will replace existing ones, the existing entries should be marked \texttt{unscheduled}.
 The simple approach we would follow  for new \texttt{predictedSchedule} events is to \texttt {unschedule} any existing \texttt {Characterization} in the time span of the new event.
 Observations in the \texttt{predictedSchedule} would be marked with priority 1.
-Observations in the \texttt{nextVisit} would be marked with priority 0.
+Observations in the \texttt{nextVisit} would be marked with priority 2.
 
 
 \subsection{History of observations}
