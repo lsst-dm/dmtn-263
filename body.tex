@@ -1,30 +1,58 @@
 \def\DB{ObsLocTAP database }
 
 \section{Introduction}
-Vera C. Rubin Observatory is required to publish the observing schedule nightly. Following our VO first policy, we  choose ObsLocTap \citep{2021ivoa.spec.0724S} \footnote{\url{https://www.ivoa.net/documents/ObsLocTAP/}} as the protocol.
+Vera C. Rubin Observatory is required to publish the observing schedule nightly.
+Following our ``VO-first'' policy, we choose IVOA ObsLocTAP \citep{2021ivoa.spec.0724S} \footnote{\url{https://www.ivoa.net/documents/ObsLocTAP/}} as the protocol.
 
 This short document discusses some design details.
 
+
 \section{Requirements}
 
-\citeds{LSE-30} (OSS) requires publication at least two hours ahead of observing.
+\citeds{LSE-30} (OSS) requires publication of schedule in advance of observing,
+in OSS-REQ-0378 (Advanced Publishing of Scheduler Sequence):
 
-\citeds{LSE-61} (DMSR) has
-DMS-REQ-0353
-Specification: A service shall be provided to publish to the community the next visit location and the predicted visit schedule provided by the OCS. This service shall consist of both a web page for human inspection and a web API to allow automated tools to respond promptly.
+\begin{quote}
+\textbf{Specification}: The nominal survey schedule shall be published at least
+\textbf{schedSeqAdvance} (24 hours)
+followed by an updated schedule at least
+\textbf{schedSeqDuration} (2 hours)
+in advance of each observing visit.
+\end{quote}
 
+\citeds{LSE-72} (OCS-DM ICD) requires notification to DM of the ``next visit'',
+in OCS-DM-COM-ICD-0031 (Advance Notice of Pointings):
 
-In \citeds{DMTN-199} the agencies insist we publish a schedule 24 hours ahead of observing.
+\begin{quote}
+\textbf{Specification}: Advance notice of telescope pointings for science data
+acquisition shall be made available to Data Management as an OCS event,
+no later than time
+\textbf{pointingAdvanceNoticeTime} (20 seconds) before the start of the first
+exposure of a standard visit or the only exposure of an alternate science visit.
+\end{quote}
+
+\citeds{LSE-61} (DMSR) flows down OSS-REQ-0378
+to DMS-REQ-0353 (Publishing predicted visit schedule, priority 1b):
+
+\begin{quote}
+\textbf{Specification}: A service shall be provided to publish to the community
+the next visit location and the predicted visit schedule provided by the OCS.
+This service shall consist of both a web page for human inspection and a web API
+to allow automated tools to respond promptly.
+
+\textbf{Discussion}: The next visit and advanced schedule do not need to be
+published using the same service or protocol.
+\end{quote}
+
+\citeds{DMTN-199} (Rubin Observatory Data Security Standards Implementation)
+documents that the 24-hour requirement, which was added late
+in the development of the project, derived from a government agency request.
 The lack of fidelity of such a schedule is acknowledged by the agencies.
-
-Though an official LCR should be made it is clear we must provide the schedule 24 hours in advance.
 
 
 \section{Design}
 
-
 There are three parts to this:
-
 
 \begin{enumerate}
 \item The forecast  which comes from the scheduler.
@@ -62,8 +90,8 @@ The updates could then be handled by looking at two Kafka events namely
 \texttt{ lsst.sal.Scheduler.logevent\_predictedSchedule} which gives then next 2 hours or so of events and
 \texttt{ lsst.sal.Scheduler.logevent\_nextVisit}  which gives the next pointing (almost certain to happen).
 
-We are required to give 24 hours notice but that is not yet in the  baseline requirements.
-Any consumers of this 24 hour schedule, as stated in \citeds{DMTN-199}, must acknowledge the lower probability of the observation being carried out compared to the 2 hour updates made during the night.
+While we are required to give 24 hours notice,
+any consumers of this 24 hour schedule, as stated in \citeds{DMTN-199}, must acknowledge the lower probability of the observation being carried out compared to the 2 hour updates made during the night.
 
 \subsubsection{Handling the schedule}
 We will need to look at each schedule event record in as it arrives.
